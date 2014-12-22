@@ -1,0 +1,111 @@
+;--------- Version Section ---------------------------------------------------
+
+[Version]
+Signature="$CHICAGO$";
+Provider=BorisJineman
+DriverVer=02/10/2012,1.0.0.0
+
+; If device fits one of the standard classes, use the name and GUID here,
+; otherwise create your own device class and GUID as this example shows.
+
+Class=Arria_II_Device 
+ClassGUID={C810AE5E-7EED-4374-9264-E89F56D07788}
+
+
+;--------- SourceDiskNames and SourceDiskFiles Section -----------------------
+
+; These sections identify source disks and files for installation. They are
+; shown here as an example, but commented out.
+
+[SourceDisksNames]
+1 = "FreeDev_WDM",,,
+
+[SourceDisksFiles]
+FreeDev_WDM.sys = 1,objchk_wxp_x86\i386,
+;FreeDev_WDM.sys = 1,objchk_wxp_x86\amd64,
+;FreeDev_WDM.sys = 1,objchk_win7_amd64\amd64,
+;FreeDev_WDM.sys = 1,objfre_win7_amd64\amd64,
+
+;--------- ClassInstall/ClassInstall32 Section -------------------------------
+
+; Not necessary if using a standard class
+
+; 9X Style
+[ClassInstall]
+Addreg=Class_AddReg
+
+; NT Style
+[ClassInstall32]
+Addreg=Class_AddReg
+
+[Class_AddReg]
+HKR,,,,%DeviceClassName%
+HKR,,Icon,,"-5"
+
+;--------- DestinationDirs Section -------------------------------------------
+
+[DestinationDirs]
+YouMark_Files_Driver = 10,System32\Drivers
+
+;--------- Manufacturer and Models Sections ----------------------------------
+
+[Manufacturer]
+%MfgName%=Mfg0,ntamd64,nt
+
+[Mfg0.nt]
+%DeviceDesc%=YouMark_DDI, PCI\VEN_1172&DEV_0004
+%DeviceDesc%=YouMark_DDI, PCI\VEN_1172&DEV_E001
+
+[Mfg0.ntamd64]
+%DeviceDesc%=YouMark_DDI, PCI\VEN_1172&DEV_0004
+%DeviceDesc%=YouMark_DDI, PCI\VEN_1172&DEV_E001
+
+;---------- DDInstall Sections -----------------------------------------------
+
+; --------- Windows NT -----------------
+[YouMark_DDI.nt]
+CopyFiles=YouMark_Files_Driver
+AddReg=YouMark_ntamd64_AddReg
+
+[YouMark_DDI.ntamd64]
+CopyFiles=YouMark_Files_Driver
+AddReg=YouMark_ntamd64_AddReg
+
+;[YouMark_DDI.ntamd64.hw]
+;AddReg=YouMark_HW_AddReg
+
+[YouMark_DDI.nt.Services]
+Addservice = FreeDev_WDM, 0x00000002, YouMark_AddService
+
+[YouMark_DDI.ntamd64.Services]
+Addservice = FreeDev_WDM, 0x00000002, YouMark_AddService
+
+[YouMark_AddService]
+DisplayName = %SvcDesc%
+ServiceType = 1 ; SERVICE_KERNEL_DRIVER
+StartType = 3 ; SERVICE_DEMAND_START
+ErrorControl = 1 ; SERVICE_ERROR_NORMAL
+ServiceBinary = %12%\FreeDev_WDM.sys
+
+[YouMark_ntamd64_AddReg]
+HKLM, "System\CurrentControlSet\Services\FreeDev_WDM\Parameters","BreakOnEntry", 0x00010001, 0
+
+;[YouMark_HW_AddReg]
+;HKR,"Interrupt Management",0x00000010
+;HKR,"Interrupt Management\MessageSignaledInterruptProperties",0x00000010
+;HKR,"Interrupt Management\MessageSignaledInterruptProperties",MSISupported,0x00010001,1
+;HKR,"Interrupt Management\MessageSignaledInterruptProperties",MessageNumberLimit,0x00010001,4
+
+; --------- Files (common) -------------
+
+[YouMark_Files_Driver]
+FreeDev_WDM.sys
+
+;--------- Strings Section ---------------------------------------------------
+
+[Strings]
+ProviderName="BorisJineman"
+MfgName="BorisJineman"
+DeviceDesc="An's PCI-E Comm Board"
+DeviceClassName="PCI-E Comm Board"
+SvcDesc="An's PCI-E Comm Board"
