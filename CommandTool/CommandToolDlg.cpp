@@ -58,8 +58,6 @@ void CCommandToolDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_DEVICE_STATUS, m_DeviceStatus);
-	DDX_Control(pDX, IDC_EDIT1, m_SendTextBox);
-	DDX_Control(pDX, IDC_EDIT2, m_ReceiveTextBox);
 }
 
 BEGIN_MESSAGE_MAP(CCommandToolDlg, CDialogEx)
@@ -68,10 +66,14 @@ BEGIN_MESSAGE_MAP(CCommandToolDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON1, &CCommandToolDlg::OnOpenDeviceBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON2, &CCommandToolDlg::OnCloseDeviceBtnClicked)
-	ON_BN_CLICKED(IDC_BUTTON3, &CCommandToolDlg::OnSendBtnClicked)
+	ON_BN_CLICKED(IDC_BUTTON9, &CCommandToolDlg::OnStartBtnClicked)
+	ON_BN_CLICKED(IDC_BUTTON10, &CCommandToolDlg::OnEndBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON4, &CCommandToolDlg::OnReceiveBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON5, &CCommandToolDlg::OnSendAFileBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON6, &CCommandToolDlg::OnReceiveAsFileBtnClicked)
+	ON_BN_CLICKED(IDC_BUTTON7, &CCommandToolDlg::OnExitBtnClicked)
+	ON_WM_TIMER()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -107,6 +109,30 @@ BOOL CCommandToolDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
+
+
+	SetDlgItemText(IDC_EDIT1, _T("10"));
+	SetDlgItemText(IDC_EDIT2, _T("13"));
+	SetDlgItemText(IDC_EDIT3, _T("13"));
+	SetDlgItemText(IDC_EDIT4, _T("1000"));
+	SetDlgItemText(IDC_EDIT5, _T("2"));
+	SetDlgItemText(IDC_EDIT6, _T("65535"));
+	SetDlgItemText(IDC_EDIT7, _T("2"));
+	SetDlgItemText(IDC_EDIT8, _T("10"));
+
+	
+	((CComboBox*)GetDlgItem(IDC_COMBO2))->AddString(_T("功放自激励"));
+	((CComboBox*)GetDlgItem(IDC_COMBO2))->AddString(_T("波表激励"));
+	((CComboBox*)GetDlgItem(IDC_COMBO2))->SetCurSel(0);
+
+	SetDlgItemText(IDC_EDIT10, _T("100"));
+	SetDlgItemText(IDC_EDIT11, _T("10"));
+
+	((CComboBox*)GetDlgItem(IDC_COMBO1))->AddString(_T("内触发"));
+	((CComboBox*)GetDlgItem(IDC_COMBO1))->AddString(_T("软件触发"));
+	((CComboBox*)GetDlgItem(IDC_COMBO1))->AddString(_T("外触发"));
+	((CComboBox*)GetDlgItem(IDC_COMBO1))->SetCurSel(0);
+
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -166,10 +192,10 @@ void CCommandToolDlg::OnOpenDeviceBtnClicked()
 {
 	// TODO: Add your control notification handler code here
 	if (CAnCommPCI::GetInstance()->OpenDevice())
-		m_DeviceStatus.SetWindowText(_T("Opened"));
+		m_DeviceStatus.SetWindowText(_T("打开"));
 	else
 	{
-		MessageBox(_T("Open Device Failed."));
+		MessageBox(_T("打开设备失败."));
 	}
 	
 }
@@ -179,19 +205,181 @@ void CCommandToolDlg::OnCloseDeviceBtnClicked()
 {
 	// TODO: Add your control notification handler code here
 	CAnCommPCI::GetInstance()->CloseDevice();
-	m_DeviceStatus.SetWindowText(_T("Closed"));
+	m_DeviceStatus.SetWindowText(_T("关闭"));
 
 }
 
 
-void CCommandToolDlg::OnSendBtnClicked()
+void CCommandToolDlg::OnStartBtnClicked()
 {
 	// TODO: Add your control notification handler code here
 	CString str;
-	m_SendTextBox.GetWindowText(str);
-	CAnCommPCI::GetInstance()->Send((unsigned char *)str.GetBuffer(), str.GetLength());
+	unsigned char* pBuffer = (unsigned char*)malloc(1024);
+	unsigned int temp = 0;
+	unsigned int index = 0;
 
+	memset(pBuffer, 0, 1024);
+
+	// The Head Of CMD Message 0x55aa0000
+	temp = 0x55AA0000;
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+	
+	GetDlgItemText(IDC_EDIT1, str);
+	temp=_ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT2, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT3, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT4, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	temp = ((CComboBox*)GetDlgItem(IDC_COMBO1))->GetCurSel();
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT5, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	temp = 1;//Start
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT6, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT7, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT8, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	temp = ((CComboBox*)GetDlgItem(IDC_COMBO2))->GetCurSel();
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT10, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT11, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	CAnCommPCI::GetInstance()->Send(pBuffer, 1024);
+
+	free(pBuffer);
+
+	SetTimer(RECEIVE_AS_FILE_TIMER, 1, NULL);
 }
+
+
+void CCommandToolDlg::OnEndBtnClicked()
+{
+	// TODO: Add your control notification handler code here
+	CString str;
+	unsigned char* pBuffer = (unsigned char*)malloc(1024);
+	unsigned long temp = 0;
+	unsigned long index = 0;
+
+	memset(pBuffer, 0, 1024);
+
+	// The Head Of CMD Message 0x55aa0000
+	unsigned char tempHead[] = { 0x55, 0xaa, 0x00, 0x00 };
+	memcpy_s(pBuffer + index, 1024, tempHead, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT1, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT2, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT3, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT4, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	temp = ((CComboBox*)GetDlgItem(IDC_COMBO1))->GetCurSel();
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT5, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	temp = 0; //Stop
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT6, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT7, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT8, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	temp = ((CComboBox*)GetDlgItem(IDC_COMBO2))->GetCurSel();
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT10, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	GetDlgItemText(IDC_EDIT11, str);
+	temp = _ttoi(str);
+	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	index += 4;
+
+	CAnCommPCI::GetInstance()->Send(pBuffer, 1024);
+	free(pBuffer);
+
+
+	KillTimer(RECEIVE_AS_FILE_TIMER);
+}
+
+
 
 
 void CCommandToolDlg::OnReceiveBtnClicked()
@@ -201,7 +389,7 @@ void CCommandToolDlg::OnReceiveBtnClicked()
 	CAnCommPCI::GetInstance()->Receive((unsigned char *)pBuffer, 0x20000);
 	CString str(pBuffer);
 	free(pBuffer);
-	m_ReceiveTextBox.SetWindowText(str);
+//	m_ReceiveTextBox.SetWindowText(str);
 
 }
 
@@ -216,15 +404,24 @@ void CCommandToolDlg::OnSendAFileBtnClicked()
 		CFile file;
 		if (!file.Open(fileName, CFile::modeRead))
 		{
-			MessageBox(_T("Open File Failed."));
+			MessageBox(_T("打开文件失败."));
 			return;
 		}
 		unsigned long len = file.GetLength();
-		unsigned char* pBuffer = (unsigned char *)malloc(len);
-		file.Read(pBuffer, len); 
-		file.Close();
-		CAnCommPCI::GetInstance()->Send(pBuffer, len);
-		free(pBuffer);
+		if ((len%4)==0||len>8192)
+		{
+			MessageBox(_T("波表文件不正确."));			
+		}
+		else
+		{
+			unsigned char* pBuffer = (unsigned char *)malloc(len+4);
+			unsigned char temp[] = { 0x55, 0xaa, 0x02, 0x00 };
+			memcpy_s(pBuffer, len + 4, temp, 4);
+			file.Read(pBuffer+4, len);
+			file.Close();
+			CAnCommPCI::GetInstance()->Send(pBuffer, len);
+			free(pBuffer);
+		}
 	}
 }
 
@@ -250,4 +447,35 @@ void CCommandToolDlg::OnReceiveAsFileBtnClicked()
 		file.Close();
 		free(pBuffer);
 	}
+}
+
+
+void CCommandToolDlg::OnExitBtnClicked()
+{
+	// TODO: Add your control notification handler code here
+	exit(0);
+}
+
+
+
+void CCommandToolDlg::TryReceiveAsFile()
+{
+}
+
+
+
+void CCommandToolDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: Add your message handler code here and/or call default
+
+	switch (nIDEvent)
+	{
+		case RECEIVE_AS_FILE_TIMER:
+			TryReceiveAsFile();
+			break;
+		default:
+			break;
+	}
+
+	CDialogEx::OnTimer(nIDEvent);
 }

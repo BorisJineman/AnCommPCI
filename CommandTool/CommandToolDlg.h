@@ -33,11 +33,17 @@ protected:
 public:
 	afx_msg void OnOpenDeviceBtnClicked();
 	afx_msg void OnCloseDeviceBtnClicked();
-	afx_msg void OnSendBtnClicked();
+	afx_msg void OnStartBtnClicked();
+	afx_msg void OnEndBtnClicked();
 	afx_msg void OnReceiveBtnClicked();
 	CStatic m_DeviceStatus;
-	CEdit m_SendTextBox;
-	CEdit m_ReceiveTextBox;
 	afx_msg void OnSendAFileBtnClicked();
 	afx_msg void OnReceiveAsFileBtnClicked();
+	afx_msg void OnExitBtnClicked();
+
+	void TryReceiveAsFile();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
+
+
+#define RECEIVE_AS_FILE_TIMER 0x1000
