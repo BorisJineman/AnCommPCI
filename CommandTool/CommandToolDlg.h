@@ -38,11 +38,10 @@ public:
 	afx_msg void OnReceiveBtnClicked();
 	CStatic m_DeviceStatus;
 	afx_msg void OnSendAFileBtnClicked();
-	afx_msg void OnReceiveAsFileBtnClicked();
-	afx_msg void OnExitBtnClicked();
-
-	void TryReceiveAsFile();
+	afx_msg void OnSetFilePathBtnClicked();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnExitBtnClicked();
+	afx_msg void OnBnClickedButton3();
 };
 
 

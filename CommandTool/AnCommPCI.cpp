@@ -4,8 +4,6 @@
 #include "stdafx.h"
 
 #include "AnCommPCI.h"
-#include "..\AnCommPCI\guid.h"
-#include "..\AnCommPCI\Ioctls.h"
 
 CAnCommPCI* CAnCommPCI::m_pInstance = NULL;
 
@@ -124,23 +122,86 @@ unsigned long CAnCommPCI::Receive(unsigned char* data, unsigned long len)
 		{
 			cmd.length = remainLen;
 		}
-			DeviceIoControl(m_hDevice, IOCTL_BEGIN_RECEIVE_DATA, &cmd, sizeof(ReadCmd), NULL, 0, &retLen, NULL);
+		DeviceIoControl(m_hDevice, IOCTL_BEGIN_RECEIVE_DATA, &cmd, sizeof(ReadCmd), NULL, 0, &retLen, NULL);
 
-			do
-			{
-				Sleep(1);
-				DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, cmd.length, &retLen, NULL);
+		do
+		{
+			Sleep(1);
+			DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, cmd.length, &retLen, NULL);
 
-			} while (retLen == 0);
+		} while (retLen == 0);
 
-			memcpy(data + cmd.offset, buff, retLen);
-			cmd.offset += retLen;
-			remainLen -= retLen;
+		memcpy(data + cmd.offset, buff, retLen);
+		cmd.offset += retLen;
+		remainLen -= retLen;
 
-		
-		
 	}
 
 	free(buff);
 	return len;
+}
+
+void CAnCommPCI::ReceiveAsFile()
+{
+	
+
+	unsigned long retLen = 0;
+	unsigned char *buff = (unsigned char *)malloc(0x20000);
+	if (!m_bFileReady)
+	{
+		ReadCmd cmd;
+		cmd.offset = 0;
+		cmd.length = 0x20000;
+		m_hCurrentCMDStatus = cmd;
+	}
+
+	do
+	{
+		DeviceIoControl(m_hDevice, IOCTL_BEGIN_RECEIVE_DATA, &m_hCurrentCMDStatus, sizeof(ReadCmd), NULL, 0, &retLen, NULL);
+		Sleep(1);
+		DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, m_hCurrentCMDStatus.length, &retLen, NULL);
+		if (retLen != 0)
+		{
+			if (!m_bFileReady)
+			{
+				
+				SYSTEMTIME sys;
+				GetLocalTime(&sys);
+				CString fileName;
+				fileName.Format(_T("%4d%02d%02d_%02d%02d%02d_%03d.bin"), sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
+				CString fileFullName(get_FileSavePath());
+				fileFullName.Append(fileName);
+				if (m_hFile.Open(fileFullName, CFile::modeWrite | CFile::modeCreate))
+				{
+					m_bFileReady = true;
+				}
+				else
+				{
+					break;
+				}
+
+			}
+			else
+			{
+				m_hFile.Write(buff, retLen);
+			}
+
+			m_hCurrentCMDStatus.offset += 0x20000;
+			waitTimes = 0;
+			
+		}
+
+	} while (retLen != 0);
+
+	waitTimes++;
+	if (m_bFileReady&&waitTimes >= 3)
+	{
+		m_hFile.Flush();
+		m_hFile.Close();
+	}
+	
+	free(buff);
+	
+	return;
+	
 }

@@ -50,9 +50,14 @@ typedef struct _DEVICE_EXTENSION
 	PVOID MemBar2;							
 	ULONG nMem2;							
 	BOOLEAN mappedport;						
-	PUCHAR pConfigSpace;				
+	PUCHAR pConfigSpace;		
+		
 	unsigned long MemOK;
+
+	unsigned long ReadDMATableOnline;
+
 	unsigned long ReadOK;
+
 
 	PKINTERRUPT pInterruptObject;
 

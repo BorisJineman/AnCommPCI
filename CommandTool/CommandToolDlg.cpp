@@ -70,10 +70,12 @@ BEGIN_MESSAGE_MAP(CCommandToolDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON10, &CCommandToolDlg::OnEndBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON4, &CCommandToolDlg::OnReceiveBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON5, &CCommandToolDlg::OnSendAFileBtnClicked)
-	ON_BN_CLICKED(IDC_BUTTON6, &CCommandToolDlg::OnReceiveAsFileBtnClicked)
+	ON_BN_CLICKED(IDC_BUTTON6, &CCommandToolDlg::OnSetFilePathBtnClicked)
+//	ON_BN_CLICKED(IDC_BUTTON7, &CCommandToolDlg::OnExitBtnClicked)
+	ON_WM_TIMER()
+	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BUTTON7, &CCommandToolDlg::OnExitBtnClicked)
-	ON_WM_TIMER()
-	ON_WM_TIMER()
+	ON_BN_CLICKED(IDC_BUTTON3, &CCommandToolDlg::OnBnClickedButton3)
 END_MESSAGE_MAP()
 
 
@@ -213,6 +215,13 @@ void CCommandToolDlg::OnCloseDeviceBtnClicked()
 void CCommandToolDlg::OnStartBtnClicked()
 {
 	// TODO: Add your control notification handler code here
+
+	if (CAnCommPCI::GetInstance()->get_FileSavePath().IsEmpty())
+	{
+		MessageBox(_T("未设置文件存储路径."));
+	}
+
+
 	CString str;
 	unsigned char* pBuffer = (unsigned char*)malloc(1024);
 	unsigned int temp = 0;
@@ -426,41 +435,19 @@ void CCommandToolDlg::OnSendAFileBtnClicked()
 }
 
 
-void CCommandToolDlg::OnReceiveAsFileBtnClicked()
+void CCommandToolDlg::OnSetFilePathBtnClicked()
 {
 	// TODO: Add your control notification handler code here
-	CFileDialog dialog(false);
+
+	CFolderPickerDialog dialog;
 	if (dialog.DoModal() == IDOK)
 	{
-		CString fileName = dialog.GetPathName();
-		CFile file;
-		if (!file.Open(fileName, CFile::modeWrite | CFile::modeCreate))
-		{
-			MessageBox(_T("Create File Failed."));
-			return;
-		}
-		unsigned long len = 128 * 1024 * 1024;
-		unsigned char* pBuffer = (unsigned char *)malloc(len);		
-		len=CAnCommPCI::GetInstance()->Receive(pBuffer, len);
-		file.Write(pBuffer, len);
-		file.Flush();
-		file.Close();
-		free(pBuffer);
+		CAnCommPCI::GetInstance()->set_FileSavePath(dialog.GetFolderPath());
 	}
+
+
 }
 
-
-void CCommandToolDlg::OnExitBtnClicked()
-{
-	// TODO: Add your control notification handler code here
-	exit(0);
-}
-
-
-
-void CCommandToolDlg::TryReceiveAsFile()
-{
-}
 
 
 
@@ -471,11 +458,34 @@ void CCommandToolDlg::OnTimer(UINT_PTR nIDEvent)
 	switch (nIDEvent)
 	{
 		case RECEIVE_AS_FILE_TIMER:
-			TryReceiveAsFile();
+			CAnCommPCI::GetInstance()->ReceiveAsFile();
 			break;
 		default:
 			break;
 	}
 
 	CDialogEx::OnTimer(nIDEvent);
+}
+
+
+void CCommandToolDlg::OnExitBtnClicked()
+{
+	// TODO: Add your message handler code here and/or call default
+	OnCloseDeviceBtnClicked();
+	exit(0);
+
+}
+
+
+void CCommandToolDlg::OnBnClickedButton3()
+{
+	// TODO: Add your message handler code here and/or call default
+
+	if (CAnCommPCI::GetInstance()->get_FileSavePath().IsEmpty())
+	{
+		MessageBox(_T("未设置文件存储路径."));
+	}
+
+	ShellExecute(NULL, _T("open"),CAnCommPCI::GetInstance()->get_FileSavePath().GetBuffer(), NULL, NULL, SW_SHOWNORMAL);
+
 }
