@@ -41,8 +41,11 @@ public:
 	afx_msg void OnSetFilePathBtnClicked();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnExitBtnClicked();
-	afx_msg void OnBnClickedButton3();
+	afx_msg void OnOpenFilePathBnClicked();
+	afx_msg void OnResetCommBtnClicked();
 };
 
 
 #define RECEIVE_AS_FILE_TIMER 0x1000
+
+#define GET_DEVICE_CURRENT_INFO_TIMER 0x1001

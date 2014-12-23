@@ -28,6 +28,10 @@ public:
 	unsigned long Receive(unsigned char* data, unsigned long len);
 
 	void ReceiveAsFile();
+	void GetCurrentInfo(DeviceStatus * status);
+
+
+	void ResetComm();
 
 	CString get_FileSavePath(){ return m_sFileSavePath; }
 	void set_FileSavePath(CString value){ m_sFileSavePath = value; }

@@ -146,12 +146,12 @@ void CAnCommPCI::ReceiveAsFile()
 	
 
 	unsigned long retLen = 0;
-	unsigned char *buff = (unsigned char *)malloc(0x20000);
+	unsigned char *buff = (unsigned char *)malloc(0x40000);
 	if (!m_bFileReady)
 	{
 		ReadCmd cmd;
 		cmd.offset = 0;
-		cmd.length = 0x20000;
+		cmd.length = 0x40000;
 		m_hCurrentCMDStatus = cmd;
 	}
 
@@ -170,6 +170,7 @@ void CAnCommPCI::ReceiveAsFile()
 				CString fileName;
 				fileName.Format(_T("%4d%02d%02d_%02d%02d%02d_%03d.bin"), sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
 				CString fileFullName(get_FileSavePath());
+				fileFullName.Append(_T("\\"));
 				fileFullName.Append(fileName);
 				if (m_hFile.Open(fileFullName, CFile::modeWrite | CFile::modeCreate))
 				{
@@ -186,7 +187,7 @@ void CAnCommPCI::ReceiveAsFile()
 				m_hFile.Write(buff, retLen);
 			}
 
-			m_hCurrentCMDStatus.offset += 0x20000;
+			m_hCurrentCMDStatus.offset += 0x40000;
 			waitTimes = 0;
 			
 		}
@@ -198,10 +199,27 @@ void CAnCommPCI::ReceiveAsFile()
 	{
 		m_hFile.Flush();
 		m_hFile.Close();
+		m_bFileReady = false;
 	}
 	
 	free(buff);
 	
 	return;
 	
+}
+
+
+void CAnCommPCI::GetCurrentInfo(DeviceStatus * status)
+{
+	unsigned long retLen = 0;
+	DeviceIoControl(m_hDevice, IOCTL_GET_DEVICE_STATUS, NULL, 0, status, sizeof(DeviceStatus), &retLen, NULL);
+}
+
+
+void CAnCommPCI::ResetComm()
+{
+	unsigned long retLen = 0;
+
+	DeviceIoControl(m_hDevice, IOCTL_RESET_COMM, NULL, 0, NULL,0, &retLen, NULL);
+
 }

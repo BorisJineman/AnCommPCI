@@ -7,6 +7,8 @@
 #include "CommandToolDlg.h"
 #include "afxdialogex.h"
 #include "AnCommPCI.h"
+#include "..\AnCommPCI\Ioctls.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -71,11 +73,10 @@ BEGIN_MESSAGE_MAP(CCommandToolDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON4, &CCommandToolDlg::OnReceiveBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON5, &CCommandToolDlg::OnSendAFileBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON6, &CCommandToolDlg::OnSetFilePathBtnClicked)
-//	ON_BN_CLICKED(IDC_BUTTON7, &CCommandToolDlg::OnExitBtnClicked)
 	ON_WM_TIMER()
 	ON_WM_TIMER()
 	ON_BN_CLICKED(IDC_BUTTON7, &CCommandToolDlg::OnExitBtnClicked)
-	ON_BN_CLICKED(IDC_BUTTON3, &CCommandToolDlg::OnBnClickedButton3)
+	ON_BN_CLICKED(IDC_BUTTON8, &CCommandToolDlg::OnResetCommBtnClicked)
 END_MESSAGE_MAP()
 
 
@@ -136,6 +137,7 @@ BOOL CCommandToolDlg::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_COMBO1))->SetCurSel(0);
 
 
+
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -194,7 +196,10 @@ void CCommandToolDlg::OnOpenDeviceBtnClicked()
 {
 	// TODO: Add your control notification handler code here
 	if (CAnCommPCI::GetInstance()->OpenDevice())
+	{
 		m_DeviceStatus.SetWindowText(_T("打开"));
+		SetTimer(GET_DEVICE_CURRENT_INFO_TIMER, 50, NULL);
+	}
 	else
 	{
 		MessageBox(_T("打开设备失败."));
@@ -206,6 +211,7 @@ void CCommandToolDlg::OnOpenDeviceBtnClicked()
 void CCommandToolDlg::OnCloseDeviceBtnClicked()
 {
 	// TODO: Add your control notification handler code here
+	KillTimer(GET_DEVICE_CURRENT_INFO_TIMER);
 	CAnCommPCI::GetInstance()->CloseDevice();
 	m_DeviceStatus.SetWindowText(_T("关闭"));
 
@@ -229,9 +235,13 @@ void CCommandToolDlg::OnStartBtnClicked()
 
 	memset(pBuffer, 0, 1024);
 
-	// The Head Of CMD Message 0x55aa0000
-	temp = 0x55AA0000;
-	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
+	// The Head Of CMD Message 0x55 0xaa 0x00 0x00
+	unsigned char tempHead[] = { 0x55, 0xaa, 0x00, 0x00 };
+	memcpy_s(pBuffer + index, 1024, tempHead, 4);
+	index += 4;
+
+	temp = 0x00000010;
+	memcpy_s(pBuffer + index, 1024, &temp, 4);
 	index += 4;
 	
 	GetDlgItemText(IDC_EDIT1, str);
@@ -314,9 +324,13 @@ void CCommandToolDlg::OnEndBtnClicked()
 
 	memset(pBuffer, 0, 1024);
 
-	// The Head Of CMD Message 0x55aa0000
+	// The Head Of CMD Message 0x55 0xaa 0x00 0x00
 	unsigned char tempHead[] = { 0x55, 0xaa, 0x00, 0x00 };
 	memcpy_s(pBuffer + index, 1024, tempHead, 4);
+	index += 4;
+
+	temp = 0x00000010;
+	memcpy_s(pBuffer + index, 1024,&temp, 4);
 	index += 4;
 
 	GetDlgItemText(IDC_EDIT1, str);
@@ -394,8 +408,8 @@ void CCommandToolDlg::OnEndBtnClicked()
 void CCommandToolDlg::OnReceiveBtnClicked()
 {
 	// TODO: Add your control notification handler code here
-	unsigned char * pBuffer = (unsigned char *)malloc(0x20000);
-	CAnCommPCI::GetInstance()->Receive((unsigned char *)pBuffer, 0x20000);
+	unsigned char * pBuffer = (unsigned char *)malloc(0x40000);
+	CAnCommPCI::GetInstance()->Receive((unsigned char *)pBuffer, 0x40000);
 	CString str(pBuffer);
 	free(pBuffer);
 //	m_ReceiveTextBox.SetWindowText(str);
@@ -424,9 +438,14 @@ void CCommandToolDlg::OnSendAFileBtnClicked()
 		else
 		{
 			unsigned char* pBuffer = (unsigned char *)malloc(len+4);
-			unsigned char temp[] = { 0x55, 0xaa, 0x02, 0x00 };
+			unsigned char temp[] = { 0x55, 0xaa, 0x02, 0x00 };			
 			memcpy_s(pBuffer, len + 4, temp, 4);
-			file.Read(pBuffer+4, len);
+
+			unsigned long lenofdw = len / 4;
+			memcpy_s(pBuffer + 4, len, &lenofdw, 4);
+
+			file.Read(pBuffer+8, len);
+			file.Flush();
 			file.Close();
 			CAnCommPCI::GetInstance()->Send(pBuffer, len);
 			free(pBuffer);
@@ -460,6 +479,24 @@ void CCommandToolDlg::OnTimer(UINT_PTR nIDEvent)
 		case RECEIVE_AS_FILE_TIMER:
 			CAnCommPCI::GetInstance()->ReceiveAsFile();
 			break;
+		case GET_DEVICE_CURRENT_INFO_TIMER:
+			DeviceStatus status;
+			CAnCommPCI::GetInstance()->GetCurrentInfo(&status);
+			TCHAR temp[20];
+			_stprintf_s(temp,20, _T("%d"), status.voltage);
+			SetDlgItemText(IDC_VOLTAGE, temp);
+			_stprintf_s(temp, 20, _T("%d"), status.temperature);
+			SetDlgItemText(IDC_TEMPERATURE, temp);
+			_stprintf_s(temp, 20, _T("%d"), status.x);
+			SetDlgItemText(IDC_DEVICE_X, temp);
+			_stprintf_s(temp, 20, _T("%d"), status.y);
+			SetDlgItemText(IDC_DEVICE_Y, temp);
+			_stprintf_s(temp, 20, _T("%d"), status.z);
+			SetDlgItemText(IDC_DEVICE_Z, temp);
+			_stprintf_s(temp, 20, _T("%d"), status.comm);
+			SetDlgItemText(IDC_COMM, temp);
+
+			break;
 		default:
 			break;
 	}
@@ -471,21 +508,32 @@ void CCommandToolDlg::OnTimer(UINT_PTR nIDEvent)
 void CCommandToolDlg::OnExitBtnClicked()
 {
 	// TODO: Add your message handler code here and/or call default
+
+
 	OnCloseDeviceBtnClicked();
 	exit(0);
 
 }
 
 
-void CCommandToolDlg::OnBnClickedButton3()
+void CCommandToolDlg::OnOpenFilePathBnClicked()
 {
 	// TODO: Add your message handler code here and/or call default
 
-	if (CAnCommPCI::GetInstance()->get_FileSavePath().IsEmpty())
-	{
-		MessageBox(_T("未设置文件存储路径."));
-	}
+	//if (CAnCommPCI::GetInstance()->get_FileSavePath().IsEmpty())
+	//{
+	//	MessageBox(_T("未设置文件存储路径."));
+	//}
 
-	ShellExecute(NULL, _T("open"),CAnCommPCI::GetInstance()->get_FileSavePath().GetBuffer(), NULL, NULL, SW_SHOWNORMAL);
+	//ShellExecute(NULL, _T("open"),CAnCommPCI::GetInstance()->get_FileSavePath().GetBuffer(), NULL, NULL, SW_SHOWNORMAL);
+
+}
+
+
+void CCommandToolDlg::OnResetCommBtnClicked()
+{
+	// TODO: Add your control notification handler code here
+	
+	CAnCommPCI::GetInstance()->ResetComm();
 
 }

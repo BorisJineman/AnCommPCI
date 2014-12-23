@@ -18,10 +18,17 @@ extern "C"
 typedef struct _DMA_Struct
 {
 	unsigned long HEAD[4];
-	unsigned long DMA_Length;
-	unsigned long AddrOnBoard;
-	unsigned long AddrOnMemHi;
-	unsigned long AddrOnMemLo;
+
+	unsigned long DMA_Length0;
+	unsigned long AddrOnBoard0;
+	unsigned long AddrOnMemHi0;
+	unsigned long AddrOnMemLo0;
+
+	unsigned long DMA_Length1;
+	unsigned long AddrOnBoard1;
+	unsigned long AddrOnMemHi1;
+	unsigned long AddrOnMemLo1;
+
 	unsigned long EMPTY[4];
 } DMA_Struct, *PDMA_Struct;
 
@@ -56,6 +63,7 @@ typedef struct _DEVICE_EXTENSION
 
 	unsigned long ReadDMATableOnline;
 
+	unsigned long currentReadOffset;
 	unsigned long ReadOK;
 
 
