@@ -68,4 +68,10 @@ typedef struct _DeviceStatus
 	METHOD_BUFFERED, \
 	FILE_ANY_ACCESS)
 
+#define IOCTL_RECEIVE_IGNORE_LEN_DATA CTL_CODE(\
+			FILE_DEVICE_UNKNOWN, \
+			0x80E, \
+			METHOD_BUFFERED, \
+			FILE_ANY_ACCESS)	
+
 #endif

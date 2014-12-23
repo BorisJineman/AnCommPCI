@@ -117,7 +117,7 @@ unsigned long CAnCommPCI::Receive(unsigned char* data, unsigned long len)
 	do
 	{
 		Sleep(1);
-		DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, cmd.length, &retLen, NULL);
+		DeviceIoControl(m_hDevice, IOCTL_RECEIVE_IGNORE_LEN_DATA, NULL, 0, (LPVOID)buff, cmd.length, &retLen, NULL);
 
 	} while (retLen == 0);
 
