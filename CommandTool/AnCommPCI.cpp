@@ -106,39 +106,25 @@ unsigned long CAnCommPCI::Receive(unsigned char* data, unsigned long len)
 {
 
 	unsigned long retLen = 0;
-	unsigned char *buff = (unsigned char *)malloc(0x20000);
+	unsigned char *buff = (unsigned char *)malloc(0x40000);
+
 	ReadCmd cmd;
-	int remainLen = len;
-	cmd.offset = 0;
-	
+	cmd.offset = 0;	
+	cmd.length = len;
 
-	if (remainLen > 0)
+	DeviceIoControl(m_hDevice, IOCTL_BEGIN_RECEIVE_DATA, &cmd, sizeof(ReadCmd), NULL, 0, &retLen, NULL);
+
+	do
 	{
-		if (remainLen > 0x20000)
-		{
-			cmd.length = 0x20000;
-		}
-		else
-		{
-			cmd.length = remainLen;
-		}
-		DeviceIoControl(m_hDevice, IOCTL_BEGIN_RECEIVE_DATA, &cmd, sizeof(ReadCmd), NULL, 0, &retLen, NULL);
+		Sleep(1);
+		DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, cmd.length, &retLen, NULL);
 
-		do
-		{
-			Sleep(1);
-			DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, cmd.length, &retLen, NULL);
+	} while (retLen == 0);
 
-		} while (retLen == 0);
-
-		memcpy(data + cmd.offset, buff, retLen);
-		cmd.offset += retLen;
-		remainLen -= retLen;
-
-	}
+	memcpy(data + cmd.offset, buff, retLen);
 
 	free(buff);
-	return len;
+	return retLen;
 }
 
 void CAnCommPCI::ReceiveAsFile()

@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 #include "AnCommPCI.h"
 #include "..\AnCommPCI\Ioctls.h"
+#include "ConvertStrHex.h"
 
 
 #ifdef _DEBUG
@@ -70,7 +71,8 @@ BEGIN_MESSAGE_MAP(CCommandToolDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON2, &CCommandToolDlg::OnCloseDeviceBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON9, &CCommandToolDlg::OnStartBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON10, &CCommandToolDlg::OnEndBtnClicked)
-	ON_BN_CLICKED(IDC_BUTTON4, &CCommandToolDlg::OnReceiveBtnClicked)
+	ON_BN_CLICKED(IDC_BUTTON11, &CCommandToolDlg::OnSendBtnClicked)
+	ON_BN_CLICKED(IDC_BUTTON13, &CCommandToolDlg::OnReceiveBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON5, &CCommandToolDlg::OnSendAFileBtnClicked)
 	ON_BN_CLICKED(IDC_BUTTON6, &CCommandToolDlg::OnSetFilePathBtnClicked)
 	ON_WM_TIMER()
@@ -137,6 +139,8 @@ BOOL CCommandToolDlg::OnInitDialog()
 	((CComboBox*)GetDlgItem(IDC_COMBO1))->SetCurSel(0);
 
 
+	SetDlgItemText(IDC_EDIT14, _T("100"));
+	SetDlgItemText(IDC_EDIT15, _T("100"));
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -405,15 +409,56 @@ void CCommandToolDlg::OnEndBtnClicked()
 
 
 
-void CCommandToolDlg::OnReceiveBtnClicked()
+void CCommandToolDlg::OnSendBtnClicked()
 {
 	// TODO: Add your control notification handler code here
-	unsigned char * pBuffer = (unsigned char *)malloc(0x40000);
-	CAnCommPCI::GetInstance()->Receive((unsigned char *)pBuffer, 0x40000);
-	CString str(pBuffer);
-	free(pBuffer);
-//	m_ReceiveTextBox.SetWindowText(str);
+	unsigned char * pBuffer = (unsigned char *)malloc(0x20000);
+	unsigned long len = 0x20000;
+	memset(pBuffer, 0, len);
+	CString str;
+	GetDlgItemText(IDC_EDIT12, str);
+	str.Replace(_T(" "), _T(""));
+	len=CConvertStrHex::str2hex(str.GetBuffer(), pBuffer, str.GetLength());
 
+	unsigned long temp = 0;
+	GetDlgItemText(IDC_EDIT15, str);
+	temp = _ttoi(str);
+	if (len > temp)
+		len = temp;
+	CAnCommPCI::GetInstance()->Send((unsigned char *)pBuffer, len);
+	free(pBuffer);
+}
+
+
+void CCommandToolDlg::OnReceiveBtnClicked()
+{	
+	unsigned char * pBuffer = (unsigned char *)malloc(0x40000);
+	memset(pBuffer, 0, 0x40000);
+	unsigned long len = 0;
+	CString str;
+	GetDlgItemText(IDC_EDIT14, str);
+	len = _ttoi(str);
+	len=CAnCommPCI::GetInstance()->Receive((unsigned char *)pBuffer, len);
+	TCHAR* pStr = (TCHAR *)malloc(0x40000 * 2);
+	memset(pStr, 0, 0x40000 * 2);
+
+	CConvertStrHex::hex2str(pBuffer, pStr, len);
+	
+	CString resultStr(pStr);
+	unsigned long index=0;
+	len = resultStr.GetLength();
+	while (index < len)
+	{
+		index += 2;		
+		resultStr.Insert(index, _T(" "));
+		index += 1;
+		len += 1;
+	}
+	
+	SetDlgItemText(IDC_EDIT13, resultStr);
+
+	free(pStr);
+	free(pBuffer);
 }
 
 
@@ -430,13 +475,16 @@ void CCommandToolDlg::OnSendAFileBtnClicked()
 			MessageBox(_T("打开文件失败."));
 			return;
 		}
-		unsigned long len = file.GetLength();
-		if ((len%4)==0||len>8192)
+		unsigned long long fileLen = file.GetLength();
+
+		if (fileLen > 8192 || (fileLen % 4) != 0)
 		{
-			MessageBox(_T("波表文件不正确."));			
-		}
+			MessageBox(_T("波表文件不正确."));
+		}	
 		else
 		{
+			unsigned long len;
+			len = (unsigned long)fileLen;
 			unsigned char* pBuffer = (unsigned char *)malloc(len+4);
 			unsigned char temp[] = { 0x55, 0xaa, 0x02, 0x00 };			
 			memcpy_s(pBuffer, len + 4, temp, 4);
@@ -508,7 +556,6 @@ void CCommandToolDlg::OnTimer(UINT_PTR nIDEvent)
 void CCommandToolDlg::OnExitBtnClicked()
 {
 	// TODO: Add your message handler code here and/or call default
-
 
 	OnCloseDeviceBtnClicked();
 	exit(0);

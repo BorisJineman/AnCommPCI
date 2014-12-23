@@ -36,6 +36,7 @@ public:
 	afx_msg void OnStartBtnClicked();
 	afx_msg void OnEndBtnClicked();
 	afx_msg void OnReceiveBtnClicked();
+	afx_msg void OnSendBtnClicked();
 	CStatic m_DeviceStatus;
 	afx_msg void OnSendAFileBtnClicked();
 	afx_msg void OnSetFilePathBtnClicked();
