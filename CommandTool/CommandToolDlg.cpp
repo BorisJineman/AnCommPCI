@@ -240,8 +240,8 @@ void CCommandToolDlg::OnStartBtnClicked()
 
 	memset(pBuffer, 0, 1024);
 
-	// The Head Of CMD Message 0x55 0xaa 0x00 0x00
-	unsigned char tempHead[] = { 0x55, 0xaa, 0x00, 0x00 };
+	// The Head Of CMD Message 0x55aa0000
+	unsigned char tempHead[] = { 0x00, 0x00, 0xaa, 0x55 };
 	memcpy_s(pBuffer + index, 1024, tempHead, 4);
 	index += 4;
 
@@ -329,8 +329,8 @@ void CCommandToolDlg::OnEndBtnClicked()
 
 	memset(pBuffer, 0, 1024);
 
-	// The Head Of CMD Message 0x55 0xaa 0x00 0x00
-	unsigned char tempHead[] = { 0x55, 0xaa, 0x00, 0x00 };
+	// The Head Of CMD Message 0x55aa0000
+	unsigned char tempHead[] = { 0x00, 0x00, 0xaa, 0x55 };
 	memcpy_s(pBuffer + index, 1024, tempHead, 4);
 	index += 4;
 
@@ -487,7 +487,7 @@ void CCommandToolDlg::OnSendAFileBtnClicked()
 			unsigned long len;
 			len = (unsigned long)fileLen;
 			unsigned char* pBuffer = (unsigned char *)malloc(len+8);
-			unsigned char temp[] = { 0x55, 0xaa, 0x02, 0x00 };			
+			unsigned char temp[] = { 0x02, 0x00, 0xaa, 0x55 };
 			memcpy_s(pBuffer, len + 4, temp, 4);
 
 			unsigned long lenofdw = len / 4;
