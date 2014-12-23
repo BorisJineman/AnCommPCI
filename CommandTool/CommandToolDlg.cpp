@@ -229,6 +229,7 @@ void CCommandToolDlg::OnStartBtnClicked()
 	if (CAnCommPCI::GetInstance()->get_FileSavePath().IsEmpty())
 	{
 		MessageBox(_T("未设置文件存储路径."));
+		return;
 	}
 
 
@@ -485,15 +486,14 @@ void CCommandToolDlg::OnSendAFileBtnClicked()
 		{
 			unsigned long len;
 			len = (unsigned long)fileLen;
-			unsigned char* pBuffer = (unsigned char *)malloc(len+4);
+			unsigned char* pBuffer = (unsigned char *)malloc(len+8);
 			unsigned char temp[] = { 0x55, 0xaa, 0x02, 0x00 };			
 			memcpy_s(pBuffer, len + 4, temp, 4);
 
 			unsigned long lenofdw = len / 4;
 			memcpy_s(pBuffer + 4, len, &lenofdw, 4);
 
-			file.Read(pBuffer+8, len);
-			file.Flush();
+			file.Read(pBuffer + 8, len);
 			file.Close();
 			CAnCommPCI::GetInstance()->Send(pBuffer, len);
 			free(pBuffer);
@@ -502,16 +502,36 @@ void CCommandToolDlg::OnSendAFileBtnClicked()
 }
 
 
+int CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
+{
+	switch (uMsg)
+	{
+	case BFFM_INITIALIZED:
+		::SendMessage(hwnd, BFFM_SETSELECTION, TRUE, lpData);
+		break;
+	}
+
+	return 0;
+}
+
 void CCommandToolDlg::OnSetFilePathBtnClicked()
 {
 	// TODO: Add your control notification handler code here
 
-	CFolderPickerDialog dialog;
-	if (dialog.DoModal() == IDOK)
-	{
-		CAnCommPCI::GetInstance()->set_FileSavePath(dialog.GetFolderPath());
-	}
+	TCHAR szDir[MAX_PATH];
+	BROWSEINFO   bf;
+	LPITEMIDLIST   lpitem;
+	memset(&bf, 0, sizeof   BROWSEINFO);
+	bf.hwndOwner = m_hWnd;
+	bf.lpszTitle = _T("设定文件存储路径");
+	bf.ulFlags = BIF_RETURNONLYFSDIRS; 
+	lpitem = SHBrowseForFolder(&bf);
 
+	if (lpitem != NULL)  {
+		SHGetPathFromIDList(lpitem, szDir);
+		CString strPath(szDir);
+		CAnCommPCI::GetInstance()->set_FileSavePath(strPath);
+	}
 
 }
 
