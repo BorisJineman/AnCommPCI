@@ -311,7 +311,7 @@ void CCommandToolDlg::OnStartBtnClicked()
 	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
 	index += 4;
 
-	CAnCommPCI::GetInstance()->Send(pBuffer, 1024);
+	CAnCommPCI::GetInstance()->Send(pBuffer, 72);
 
 	free(pBuffer);
 
@@ -400,7 +400,7 @@ void CCommandToolDlg::OnEndBtnClicked()
 	memcpy_s(pBuffer + index, 1024, (unsigned char*)&temp, 4);
 	index += 4;
 
-	CAnCommPCI::GetInstance()->Send(pBuffer, 1024);
+	CAnCommPCI::GetInstance()->Send(pBuffer, 72);
 	free(pBuffer);
 
 
