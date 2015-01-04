@@ -51,7 +51,7 @@ private:
 	CFile m_hFile;
 	ReadCmd m_hCurrentCMDStatus;
 	bool m_bFileReady;
-	unsigned long waitTimes;
+	//unsigned long waitTimes;
 
 
 	

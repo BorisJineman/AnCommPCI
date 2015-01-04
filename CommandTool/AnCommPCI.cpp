@@ -174,19 +174,30 @@ void CAnCommPCI::ReceiveAsFile()
 			}
 
 			m_hCurrentCMDStatus.offset += 0x40000;
-			waitTimes = 0;
+			//waitTimes = 0;
 			
+		}
+		unsigned long receiveFinished = 0;
+		DeviceIoControl(m_hDevice, IOCTL_CHECK_RECEIVE_FINISHED, NULL, 0, (LPVOID)&receiveFinished,sizeof(unsigned long), &retLen, NULL);
+		if (receiveFinished & 0x00000001)
+		{
+			if (m_bFileReady)
+			{
+				m_hFile.Flush();
+				m_hFile.Close();
+				m_bFileReady = false;
+			}
 		}
 
 	} while (retLen != 0);
 
-	waitTimes++;
-	if (m_bFileReady&&waitTimes >= 3)
-	{
-		m_hFile.Flush();
-		m_hFile.Close();
-		m_bFileReady = false;
-	}
+	//waitTimes++;
+	//if (m_bFileReady&&waitTimes >= 3)
+	//{
+	//	m_hFile.Flush();
+	//	m_hFile.Close();
+	//	m_bFileReady = false;
+	//}
 	
 	free(buff);
 	
