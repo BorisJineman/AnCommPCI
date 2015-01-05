@@ -132,6 +132,7 @@ void CAnCommPCI::ReceiveAsFile()
 	
 
 	unsigned long retLen = 0;
+	unsigned long receiveDataLen = 0;
 	unsigned char *buff = (unsigned char *)malloc(0x40000);
 	if (!m_bFileReady)
 	{
@@ -145,8 +146,8 @@ void CAnCommPCI::ReceiveAsFile()
 	{
 		DeviceIoControl(m_hDevice, IOCTL_BEGIN_RECEIVE_DATA, &m_hCurrentCMDStatus, sizeof(ReadCmd), NULL, 0, &retLen, NULL);
 		Sleep(1);
-		DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, m_hCurrentCMDStatus.length, &retLen, NULL);
-		if (retLen != 0)
+		DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, m_hCurrentCMDStatus.length, &receiveDataLen, NULL);
+		if (receiveDataLen != 0)
 		{
 			if (!m_bFileReady)
 			{
@@ -170,18 +171,19 @@ void CAnCommPCI::ReceiveAsFile()
 			}
 			else
 			{
-				m_hFile.Write(buff, retLen);
+				m_hFile.Write(buff, receiveDataLen);
 			}
 
 			m_hCurrentCMDStatus.offset += 0x40000;
 			//waitTimes = 0;
 			
 		}
-		unsigned long receiveFinished = 0;
-		DeviceIoControl(m_hDevice, IOCTL_CHECK_RECEIVE_FINISHED, NULL, 0, (LPVOID)&receiveFinished,sizeof(unsigned long), &retLen, NULL);
-		if (receiveFinished & 0x00000001)
+		
+		if (m_bFileReady)
 		{
-			if (m_bFileReady)
+			unsigned long receiveFinished = 0;
+			DeviceIoControl(m_hDevice, IOCTL_CHECK_RECEIVE_FINISHED, NULL, 0, (LPVOID)&receiveFinished, sizeof(unsigned long), &retLen, NULL);
+			if (receiveFinished)
 			{
 				m_hFile.Flush();
 				m_hFile.Close();
@@ -189,7 +191,7 @@ void CAnCommPCI::ReceiveAsFile()
 			}
 		}
 
-	} while (retLen != 0);
+	} while (receiveDataLen != 0);
 
 	//waitTimes++;
 	//if (m_bFileReady&&waitTimes >= 3)
