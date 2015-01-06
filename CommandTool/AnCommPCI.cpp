@@ -172,6 +172,15 @@ void CAnCommPCI::ReceiveAsFile()
 			else
 			{
 				m_hFile.Write(buff, receiveDataLen);
+
+				unsigned long receiveFinished = 0;
+				DeviceIoControl(m_hDevice, IOCTL_CHECK_RECEIVE_FINISHED, NULL, 0, (LPVOID)&receiveFinished, sizeof(unsigned long), &retLen, NULL);
+				if (receiveFinished)
+				{
+					m_hFile.Flush();
+					m_hFile.Close();
+					m_bFileReady = false;
+				}
 			}
 
 			m_hCurrentCMDStatus.offset += 0x40000;
@@ -179,19 +188,7 @@ void CAnCommPCI::ReceiveAsFile()
 			
 		}
 		
-		if (m_bFileReady)
-		{
-			unsigned long receiveFinished = 0;
-			DeviceIoControl(m_hDevice, IOCTL_CHECK_RECEIVE_FINISHED, NULL, 0, (LPVOID)&receiveFinished, sizeof(unsigned long), &retLen, NULL);
-			if (receiveFinished)
-			{
-				m_hFile.Flush();
-				m_hFile.Close();
-				m_bFileReady = false;
-			}
-		}
-
-	} while (receiveDataLen != 0);
+	} while (false && receiveDataLen != 0);
 
 	//waitTimes++;
 	//if (m_bFileReady&&waitTimes >= 3)
