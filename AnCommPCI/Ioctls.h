@@ -24,6 +24,8 @@ typedef struct _DeviceStatus
 	unsigned long x;
 	unsigned long y;
 	unsigned long z;
+
+	unsigned long commOperation;
 }DeviceStatus, *PDeviceStatus;
 
 #define MAX_SEND_LENGTH 0x1000
@@ -79,5 +81,11 @@ typedef struct _DeviceStatus
 	0x80F, \
 	METHOD_BUFFERED, \
 	FILE_ANY_ACCESS)	
+
+#define IOCTL_RESET_COMM_2 CTL_CODE(\
+	FILE_DEVICE_UNKNOWN, \
+	0x810, \
+	METHOD_BUFFERED, \
+	FILE_ANY_ACCESS)
 
 #endif

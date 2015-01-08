@@ -212,10 +212,13 @@ void CAnCommPCI::GetCurrentInfo(DeviceStatus * status)
 }
 
 
-void CAnCommPCI::ResetComm()
+void CAnCommPCI::ResetComm(unsigned long operation)
 {
 	unsigned long retLen = 0;
 
-	DeviceIoControl(m_hDevice, IOCTL_RESET_COMM, NULL, 0, NULL,0, &retLen, NULL);
+	if (operation == 1)
+		DeviceIoControl(m_hDevice, IOCTL_RESET_COMM, NULL, 0, NULL, 0, &retLen, NULL);
+	else if (operation == 0)
+		DeviceIoControl(m_hDevice, IOCTL_RESET_COMM_2, NULL, 0, NULL, 0, &retLen, NULL);
 
 }

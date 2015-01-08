@@ -563,6 +563,10 @@ void CCommandToolDlg::OnTimer(UINT_PTR nIDEvent)
 			SetDlgItemText(IDC_DEVICE_Z, temp);
 			_stprintf_s(temp, 20, _T("%d"), status.comm);
 			SetDlgItemText(IDC_COMM, temp);
+			if (status.comm == 0x00000000)
+				SetDlgItemText(IDC_COMM, _T("复位通讯模块"));
+			else if (status.comm == 0x00000001)
+				SetDlgItemText(IDC_COMM, _T("启动通讯模块"));
 
 			break;
 		default:
@@ -600,7 +604,11 @@ void CCommandToolDlg::OnOpenFilePathBnClicked()
 void CCommandToolDlg::OnResetCommBtnClicked()
 {
 	// TODO: Add your control notification handler code here
-	
-	CAnCommPCI::GetInstance()->ResetComm();
+	CString str;
+	GetDlgItemText(IDC_BUTTON8, str);
+	if (str==_T("复位通讯模块"))
+		CAnCommPCI::GetInstance()->ResetComm(1);
+	else
+		CAnCommPCI::GetInstance()->ResetComm(0);
 
 }

@@ -31,7 +31,7 @@ public:
 	void GetCurrentInfo(DeviceStatus * status);
 
 
-	void ResetComm();
+	void ResetComm(unsigned long operation);
 
 	CString get_FileSavePath(){ return m_sFileSavePath; }
 	void set_FileSavePath(CString value){ m_sFileSavePath = value; }
