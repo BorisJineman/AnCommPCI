@@ -169,7 +169,7 @@ void CAnCommPCI::ReceiveAsFile()
 				}
 
 			}
-			else
+			if (m_bFileReady)
 			{
 				m_hFile.Write(buff, receiveDataLen);
 
