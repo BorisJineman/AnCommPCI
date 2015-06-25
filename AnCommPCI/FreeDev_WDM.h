@@ -64,6 +64,7 @@ typedef struct _DEVICE_EXTENSION
 	unsigned long ReadDMATableOnline;
 
 	unsigned long currentReadOffset;
+	unsigned long notFirstData;
 	unsigned long ReadOK;
 
 
@@ -77,6 +78,7 @@ typedef struct _DEVICE_EXTENSION
 	DMA_Struct * pReadDMATable;
 	DMA_Struct * pWriteDMATable;
 	unsigned char * pReadDMAData;
+	unsigned long readDMADataLen;
 	unsigned char * pWriteDMAData;
 
 	DMA_Operation * pReadDMA;
