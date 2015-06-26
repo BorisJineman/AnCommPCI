@@ -44,6 +44,7 @@ typedef struct _DMA_Operation
 typedef struct _DEVICE_EXTENSION
 {
 	PDEVICE_OBJECT fdo;
+	PDEVICE_OBJECT pdo;
 	PDEVICE_OBJECT NextStackDevice;
 	UNICODE_STRING interfaceName;			
 
