@@ -70,6 +70,7 @@ typedef struct _DEVICE_EXTENSION
 
 
 	PKINTERRUPT pInterruptObject;
+	unsigned long intCount;
 
 	unsigned char * pReadDMATablePhyAddr;
 	unsigned char * pWriteDMATablePhyAddr;

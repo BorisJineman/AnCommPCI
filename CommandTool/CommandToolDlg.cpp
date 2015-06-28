@@ -605,8 +605,8 @@ void CCommandToolDlg::OnResetCommBtnClicked()
 {
 	// TODO: Add your control notification handler code here
 	CString str;
-	GetDlgItemText(IDC_BUTTON8, str);
-	if (str==_T("复位通讯模块"))
+	GetDlgItemText(IDC_COMM, str);
+	if (str==_T("启动通讯模块"))
 		CAnCommPCI::GetInstance()->ResetComm(1);
 	else
 		CAnCommPCI::GetInstance()->ResetComm(0);
