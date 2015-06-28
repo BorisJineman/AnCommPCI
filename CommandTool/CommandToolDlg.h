@@ -30,6 +30,10 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+
+	static CWinThread* pThread;
+
+	static UINT CCommandToolDlg::ReceiveThreadProc(LPVOID pParam);
 public:
 	afx_msg void OnOpenDeviceBtnClicked();
 	afx_msg void OnCloseDeviceBtnClicked();

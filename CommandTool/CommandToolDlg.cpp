@@ -51,6 +51,8 @@ END_MESSAGE_MAP()
 
 
 
+CWinThread *CCommandToolDlg::pThread = NULL;
+
 CCommandToolDlg::CCommandToolDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CCommandToolDlg::IDD, pParent)
 {
@@ -141,6 +143,8 @@ BOOL CCommandToolDlg::OnInitDialog()
 
 	SetDlgItemText(IDC_EDIT14, _T("100"));
 	SetDlgItemText(IDC_EDIT15, _T("100"));
+
+
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -315,8 +319,23 @@ void CCommandToolDlg::OnStartBtnClicked()
 
 	free(pBuffer);
 
-	SetTimer(RECEIVE_AS_FILE_TIMER, 1, NULL);
+	//SetTimer(RECEIVE_AS_FILE_TIMER, 1, NULL);
+	if (!pThread)
+	{
+		pThread = AfxBeginThread(&CCommandToolDlg::ReceiveThreadProc, NULL, 0, 0, 0, NULL);
+	}
 }
+
+UINT CCommandToolDlg::ReceiveThreadProc(LPVOID pParam)
+{
+	while (1)
+	{
+		CAnCommPCI::GetInstance()->ReceiveAsFile();
+	}
+	//Test1(pParam);
+	return 0;
+}
+
 
 
 void CCommandToolDlg::OnEndBtnClicked()
@@ -404,7 +423,14 @@ void CCommandToolDlg::OnEndBtnClicked()
 	free(pBuffer);
 
 
-	KillTimer(RECEIVE_AS_FILE_TIMER);
+	if (pThread)
+	{ 
+		pThread->SuspendThread();
+		pThread->Delete();
+		pThread = NULL;
+	}
+	
+	//KillTimer(RECEIVE_AS_FILE_TIMER);
 }
 
 
@@ -545,7 +571,7 @@ void CCommandToolDlg::OnTimer(UINT_PTR nIDEvent)
 	switch (nIDEvent)
 	{
 		case RECEIVE_AS_FILE_TIMER:
-			CAnCommPCI::GetInstance()->ReceiveAsFile();
+			//CAnCommPCI::GetInstance()->ReceiveAsFile();
 			break;
 		case GET_DEVICE_CURRENT_INFO_TIMER:
 			DeviceStatus status;

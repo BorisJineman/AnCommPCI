@@ -145,7 +145,7 @@ void CAnCommPCI::ReceiveAsFile()
 	do
 	{
 		DeviceIoControl(m_hDevice, IOCTL_BEGIN_RECEIVE_DATA, &m_hCurrentCMDStatus, sizeof(ReadCmd), NULL, 0, &retLen, NULL);
-		Sleep(1);
+		//Sleep(1);
 		DeviceIoControl(m_hDevice, IOCTL_RECEIVE_DATA, NULL, 0, (LPVOID)buff, m_hCurrentCMDStatus.length, &receiveDataLen, NULL);
 		if (receiveDataLen != 0)
 		{
@@ -191,7 +191,7 @@ void CAnCommPCI::ReceiveAsFile()
 			}
 		}
 		
-	} while (false && receiveDataLen != 0);
+	} while (receiveDataLen != 0);
 
 	//waitTimes++;
 	//if (m_bFileReady&&waitTimes >= 3)
