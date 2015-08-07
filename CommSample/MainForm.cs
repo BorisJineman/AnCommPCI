@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlTypes;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
-using SharpPcap;
+//using SharpPcap;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 
@@ -20,15 +21,15 @@ namespace CommSample
         {
             InitializeComponent();
 
-            CaptureDeviceList allDevices = SharpPcap.CaptureDeviceList.Instance;
+            //CaptureDeviceList allDevices = SharpPcap.CaptureDeviceList.Instance;
 
-            foreach (ICaptureDevice dev in allDevices)
-            {
-                Device cdev = new Device();
-                cdev.DisplayName = dev.Description;
-                cdev.CaptureDevice = dev;
-                comboBox1.Items.Add(cdev);
-            }
+            //foreach (ICaptureDevice dev in allDevices)
+            //{
+            //    Device cdev = new Device();
+            //    cdev.DisplayName = dev.Description;
+            //    cdev.CaptureDevice = dev;
+            //    comboBox1.Items.Add(cdev);
+            //}
 
 
             if (comboBox1.Items.Count > 0)
@@ -45,6 +46,11 @@ namespace CommSample
 
                 udpClient.BeginReceive(EndReceive, udpClient);
 
+       
+
+             
+
+
                 MessageBox.Show("网络开启成功.");
                 timer1.Start();
             }
@@ -60,11 +66,11 @@ namespace CommSample
         private static FileStream currentFile;
         private static void EndReceive(IAsyncResult ar)
         {
-          
 
+            UdpClient udpClient = ar.AsyncState as UdpClient;
             try
             {
-                UdpClient udpClient = ar.AsyncState as UdpClient;
+             
 
                 IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
                 Byte[] receiveBytes = udpClient.EndReceive(ar, ref ip);
@@ -89,22 +95,26 @@ namespace CommSample
 
                 // Process Received Data
 
-
-                switch ( BitConverter.ToUInt32(receiveBytes, 0))
+                
+                switch (swaplong(BitConverter.ToUInt32(receiveBytes, 0)))
                 {
 
                     case 0x55AA1001:
                         if (currentFile == null)
                         {
-                             currentFile=  File.Create(filesavepath + "\\" + DateTime.Now.ToString("O") + ".bin");
+                          //  Console.WriteLine(filesavepath + "\\" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff") + ".bin");
+                            currentFile = File.Create(filesavepath + "\\" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff") + ".bin");
+                       
                         }
-                        currentFile.Write(receiveBytes, 8, BitConverter.ToInt32(receiveBytes, 4)*4);
+                        
+
+                        currentFile.Write(receiveBytes,0, (int)swaplong(BitConverter.ToUInt32(receiveBytes, 4)));
 
                         break;
 
                     case 0x55AA3001:
 
-                        if (BitConverter.ToUInt32(receiveBytes, 4) == 0x55aa3001)
+                        if (swaplong(BitConverter.ToUInt32(receiveBytes, 4)) == 0x55aa3001)
                         {
                             currentFile.Flush();
                             currentFile.Close();
@@ -124,7 +134,7 @@ namespace CommSample
                         break;
 
                     case 0xaa55aa55:
-                        if (BitConverter.ToUInt32(receiveBytes, 4) == 0xaa55aa55)
+                        if (BitConverter.ToUInt32(receiveBytes, 4) == 0x55aa55aa)
                         {
                             status[0] = "在线";
                         }
@@ -132,20 +142,32 @@ namespace CommSample
                     default:
                         break;
                 }
-             
+
 
 
 
             next:
 
-
-                udpClient.BeginReceive(EndReceive, udpClient);
                 ;
+               
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 status[0] = "离线";
+
             }
+
+            try
+            {
+                udpClient.BeginReceive(EndReceive, udpClient);
+            }
+            catch (Exception)
+            {
+                
+              //  throw;
+            }
+           
 
         }
 
@@ -198,9 +220,9 @@ namespace CommSample
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 var filename = openFileDialog1.FileName;
-                 List<byte> sendBytes = new List<byte>(new Byte[] {0x02, 0x00,0xaa,0x55});
+                List<byte> sendBytes = new List<byte>(new Byte[] { 0x55, 0xaa, 0x00, 0x02 });
                 byte[] filedata = System.IO.File.ReadAllBytes(filename);
-                sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(filedata.Length/4)));
+                sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(filedata.Length/4))));
                 sendBytes.AddRange(filedata);
 
                 sendBytes.Add(calc_CheckSum(sendBytes.ToArray()));
@@ -223,14 +245,18 @@ namespace CommSample
             toolStripStatusLabel10.Text = status[4];
             toolStripStatusLabel12.Text = status[5];
 
-            List<byte> sendBytes = new List<byte>(new Byte[] { 0xaa, 0x55, 0xaa, 0x55});
-            
-            sendBytes.Add(calc_CheckSum(sendBytes.ToArray()));
+            if (status[0] != "在线")
+            {
+                List<byte> sendBytes = new List<byte>(new Byte[] {0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55, 0xaa, 0x55});
 
-            udpClient.Send(sendBytes.ToArray(), sendBytes.Count,
-                new IPEndPoint(IPAddress.Parse("192.168.1.10"), 4000));
+                sendBytes.Add(calc_CheckSum(sendBytes.ToArray()));
 
-            status[0] = "离线";
+                udpClient.Send(sendBytes.ToArray(), sendBytes.Count,
+                    new IPEndPoint(IPAddress.Parse("192.168.1.10"), 4000));
+            }
+
+
+
         }
 
         private void button9_Click(object sender, EventArgs e)
@@ -243,24 +269,24 @@ namespace CommSample
 
         private void button4_Click(object sender, EventArgs e)
         {
-            List<byte> sendBytes = new List<byte>(new Byte[] { 0x00, 0x00,0xaa,0x55 });
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(16)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox1.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox2.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox3.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox4.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(comboBox2.SelectedIndex)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox5.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(1)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox6.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox7.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox8.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(comboBox3.SelectedIndex)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox9.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox10.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(0)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(0)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(0)));
+            List<byte> sendBytes = new List<byte>(new Byte[] { 0x55,0xaa,0x00, 0x00});
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(16))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox1.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox2.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox3.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox4.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(comboBox2.SelectedIndex))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox5.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(1))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox6.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox7.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox8.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(comboBox3.SelectedIndex))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox9.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox10.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(0))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(0))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(0))));
 
             sendBytes.Add(calc_CheckSum(sendBytes.ToArray()));
 
@@ -273,23 +299,23 @@ namespace CommSample
         private void button8_Click(object sender, EventArgs e)
         {
             List<byte> sendBytes = new List<byte>(new Byte[] { 0x00, 0x00, 0xaa, 0x55 });
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(16)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox1.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox2.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox3.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox4.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(comboBox2.SelectedIndex)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox5.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(0)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox6.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox7.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox8.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(comboBox3.SelectedIndex)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox9.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(textBox10.Text)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(0)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(0)));
-            sendBytes.AddRange(BitConverter.GetBytes(Convert.ToUInt32(0)));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(16))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox1.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox2.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox3.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox4.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(comboBox2.SelectedIndex))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox5.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(0))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox6.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox7.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox8.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(comboBox3.SelectedIndex))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox9.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox10.Text))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(0))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(0))));
+            sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(0))));
 
             sendBytes.Add(calc_CheckSum(sendBytes.ToArray()));
 
@@ -297,6 +323,21 @@ namespace CommSample
                 new IPEndPoint(IPAddress.Parse("192.168.1.10"), 4000));
 
             MessageBox.Show("寄存器写入完成.");
+        }
+
+        public static byte[] swap(byte[] src)
+        {
+            byte[] ret=new byte[4];
+            ret[0] = src[3];
+            ret[1] = src[2];
+            ret[2] = src[1];
+            ret[3] = src[0];
+            return ret;
+        }
+
+        public static UInt32 swaplong( UInt32 src)
+        {
+            return BitConverter.ToUInt32(swap(BitConverter.GetBytes(src)), 0);
         }
 
     }
