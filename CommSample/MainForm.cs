@@ -106,9 +106,9 @@ namespace CommSample
                             currentFile = File.Create(filesavepath + "\\" + DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff") + ".bin");
                        
                         }
-                        
 
-                        currentFile.Write(receiveBytes,0, (int)swaplong(BitConverter.ToUInt32(receiveBytes, 4)));
+
+                        currentFile.Write(receiveBytes, 0, (int) swaplong(BitConverter.ToUInt32(receiveBytes, 4))*4);
 
                         break;
 
@@ -298,7 +298,7 @@ namespace CommSample
 
         private void button8_Click(object sender, EventArgs e)
         {
-            List<byte> sendBytes = new List<byte>(new Byte[] { 0x00, 0x00, 0xaa, 0x55 });
+            List<byte> sendBytes = new List<byte>(new Byte[] { 0x55, 0xaa, 0x00, 0x00 });
             sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(16))));
             sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox1.Text))));
             sendBytes.AddRange(swap(BitConverter.GetBytes(Convert.ToUInt32(textBox2.Text))));
