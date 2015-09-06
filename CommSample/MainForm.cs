@@ -43,7 +43,8 @@ namespace CommSample
             {
                 IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 6000);
                 udpClient = new UdpClient(RemoteIpEndPoint);
-
+                udpClient.Client.ReceiveBufferSize = 1024*1024*20;
+                
                 udpClient.BeginReceive(EndReceive, udpClient);
 
        
@@ -66,14 +67,15 @@ namespace CommSample
         private static FileStream currentFile;
         private static void EndReceive(IAsyncResult ar)
         {
-
+          //  Console.WriteLine("end Receive");
             UdpClient udpClient = ar.AsyncState as UdpClient;
             try
             {
-             
-
                 IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
                 Byte[] receiveBytes = udpClient.EndReceive(ar, ref ip);
+
+              //  Console.WriteLine(ip.ToString() + " Len:" + receiveBytes.Length);
+                
 
                 if (receiveBytes.Length < 4)
                 {
@@ -108,7 +110,7 @@ namespace CommSample
                         }
 
 
-                        currentFile.Write(receiveBytes, 0, (int) swaplong(BitConverter.ToUInt32(receiveBytes, 4))*4);
+                        currentFile.Write(receiveBytes, 0, (int) swaplong(BitConverter.ToUInt32(receiveBytes, 4)));
 
                         break;
 
@@ -162,9 +164,10 @@ namespace CommSample
             {
                 udpClient.BeginReceive(EndReceive, udpClient);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                
+
+                Console.WriteLine(ex);
               //  throw;
             }
            
